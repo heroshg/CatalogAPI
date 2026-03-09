@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CatalogAPI</name>
+    </assembly>
+    <members>
+        <member name="M:CatalogAPI.Controllers.GamesController.Register(CatalogAPI.Application.Commands.RegisterGame.RegisterGameCommand,System.Threading.CancellationToken)">
+            <summary>Registers a new game (Admin only)</summary>
+        </member>
+        <member name="M:CatalogAPI.Controllers.GamesController.GetAll(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Gets paginated list of games</summary>
+        </member>
+        <member name="M:CatalogAPI.Controllers.GamesController.GetLibrary(System.Guid,System.Threading.CancellationToken)">
+            <summary>Gets all games owned by a user</summary>
+        </member>
+        <member name="M:CatalogAPI.Controllers.GamesController.Purchase(CatalogAPI.Application.Commands.PlaceOrder.PlaceOrderCommand,System.Threading.CancellationToken)">
+            <summary>Initiates a game purchase (publishes OrderPlacedEvent)</summary>
+        </member>
+    </members>
+</doc>
