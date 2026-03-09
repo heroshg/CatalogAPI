@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-api-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Jwt__Issuer: "FiapCloudGames"
+  Jwt__Audience: "FiapCloudGames"
+  RabbitMQ__Host: "rabbitmq"
+  RabbitMQ__Username: "guest"
