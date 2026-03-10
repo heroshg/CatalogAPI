@@ -1,5 +1,6 @@
+using Catalog.Application.Sagas;
+using Catalog.Application.Sagas.Activities;
 using Catalog.Domain.Interfaces;
-using Catalog.Infrastructure.Messaging;
 using Catalog.Infrastructure.Persistence;
 using Catalog.Infrastructure.Persistence.Repositories;
 using MassTransit;
@@ -18,10 +19,22 @@ public static class DependencyInjection
 
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IGameLicenseRepository, GameLicenseRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+
+        // Saga activities resolvidas pelo container
+        services.AddScoped<ApproveOrderActivity>();
+        services.AddScoped<CancelOrderActivity>();
 
         services.AddMassTransit(x =>
         {
-            x.AddConsumer<PaymentProcessedConsumer>();
+            x.AddSagaStateMachine<OrderSagaStateMachine, OrderSagaState>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+                    r.ExistingDbContext<CatalogDbContext>();
+                    r.UsePostgres();
+                });
+
             x.UsingRabbitMq((ctx, cfg) =>
             {
                 cfg.Host(configuration["RabbitMQ:Host"], "/", h =>
