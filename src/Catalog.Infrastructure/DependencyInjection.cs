@@ -1,6 +1,8 @@
 using Catalog.Domain.Interfaces;
+using Catalog.Infrastructure.Messaging;
 using Catalog.Infrastructure.Persistence;
 using Catalog.Infrastructure.Persistence.Repositories;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,20 @@ public static class DependencyInjection
 
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IGameLicenseRepository, GameLicenseRepository>();
+
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<PaymentProcessedConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(configuration["RabbitMQ:Host"], "/", h =>
+                {
+                    h.Username(configuration["RabbitMQ:Username"] ?? "guest");
+                    h.Password(configuration["RabbitMQ:Password"] ?? "guest");
+                });
+                cfg.ConfigureEndpoints(ctx);
+            });
+        });
 
         return services;
     }

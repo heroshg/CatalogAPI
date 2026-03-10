@@ -4,15 +4,18 @@ EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["CatalogAPI.csproj", "."]
-RUN dotnet restore
-COPY . .
-RUN dotnet build -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+COPY ["CatalogAPI.sln", "."]
+COPY ["src/Catalog.Domain/Catalog.Domain.csproj", "src/Catalog.Domain/"]
+COPY ["src/Catalog.Application/Catalog.Application.csproj", "src/Catalog.Application/"]
+COPY ["src/Catalog.Infrastructure/Catalog.Infrastructure.csproj", "src/Catalog.Infrastructure/"]
+COPY ["src/Catalog.API/Catalog.API.csproj", "src/Catalog.API/"]
+RUN dotnet restore "src/Catalog.API/Catalog.API.csproj"
+
+COPY . .
+RUN dotnet publish "src/Catalog.API/Catalog.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CatalogAPI.dll"]
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "Catalog.API.dll"]
