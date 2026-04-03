@@ -67,8 +67,11 @@ public static class DependencyInjection
 
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Catalog API v1"));
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Catalog API v1"));
+        }
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

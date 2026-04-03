@@ -39,8 +39,8 @@ public static class DependencyInjection
             {
                 cfg.Host(configuration["RabbitMQ:Host"], "/", h =>
                 {
-                    h.Username(configuration["RabbitMQ:Username"] ?? "guest");
-                    h.Password(configuration["RabbitMQ:Password"] ?? "guest");
+                    h.Username(configuration["RabbitMQ:Username"] ?? throw new InvalidOperationException("RabbitMQ:Username is missing."));
+                    h.Password(configuration["RabbitMQ:Password"] ?? throw new InvalidOperationException("RabbitMQ:Password is missing."));
                 });
                 cfg.ConfigureEndpoints(ctx);
             });
