@@ -14,7 +14,7 @@ public class RegisterGameHandler(IGameRepository repository)
             return ResultViewModel<Guid>.Error("A game with this name already exists.");
 
         var game = new Game(request.Name, request.Description, request.Price);
-        var id = await repository.AddAsync(game, ct);
+        var id = await repository.AddAsync(game, CancellationToken.None);
         return ResultViewModel<Guid>.Success(id);
     }
 }

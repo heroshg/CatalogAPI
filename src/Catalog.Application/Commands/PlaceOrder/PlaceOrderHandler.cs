@@ -19,7 +19,7 @@ public class PlaceOrderHandler(
     public async Task<ResultViewModel<Guid>> Handle(PlaceOrderCommand request, CancellationToken ct)
     {
         var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
-        var userEmail = httpContextAccessor.HttpContext?.User.FindFirst("username")?.Value;
+        var userEmail   = httpContextAccessor.HttpContext?.User.FindFirst("username")?.Value;
 
         if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
             return ResultViewModel<Guid>.Error("Invalid user token.");
@@ -31,14 +31,13 @@ public class PlaceOrderHandler(
         if (await licenseRepository.ExistsAsync(game.Id, userId, ct))
             return ResultViewModel<Guid>.Error("You already own this game.");
 
-        var orderId = Guid.NewGuid();
-
-        var order = Order.Create(orderId, userId, game.Id, game.Name, game.Price);
-        await orderRepository.AddAsync(order, ct);
+        var order = Order.Create(userId, game.Id, game.Name, game.Price);
+        await orderRepository.AddAsync(order, CancellationToken.None);
 
         await publishEndpoint.Publish(new OrderPlacedEvent(
-            orderId, userId, userEmail ?? string.Empty, game.Id, game.Name, game.Price), ct);
+            order.Id, userId, userEmail ?? string.Empty,
+            game.Id, game.Name.Value, game.Price.Amount), CancellationToken.None);
 
-        return ResultViewModel<Guid>.Success(orderId);
+        return ResultViewModel<Guid>.Success(order.Id);
     }
 }

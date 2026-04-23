@@ -14,6 +14,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // ── Banco de Dados ────────────────────────────────────────────────────
         services.AddDbContext<CatalogDbContext>(opts =>
             opts.UseNpgsql(configuration.GetConnectionString("Catalog")));
 
@@ -25,8 +26,25 @@ public static class DependencyInjection
         services.AddScoped<ApproveOrderActivity>();
         services.AddScoped<CancelOrderActivity>();
 
+        // ── Cache — Redis ─────────────────────────────────────────────────────
+        var redisConnection = configuration["Redis:ConnectionString"];
+        if (!string.IsNullOrWhiteSpace(redisConnection))
+        {
+            services.AddStackExchangeRedisCache(opts =>
+            {
+                opts.Configuration = redisConnection;
+                opts.InstanceName   = "fcg-catalog:";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
+
+        // ── Mensageria — RabbitMQ ─────────────────────────────────────────────
         services.AddMassTransit(x =>
         {
+            x.DisableUsageTelemetry();
             x.AddSagaStateMachine<OrderSagaStateMachine, OrderSagaState>()
                 .EntityFrameworkRepository(r =>
                 {
