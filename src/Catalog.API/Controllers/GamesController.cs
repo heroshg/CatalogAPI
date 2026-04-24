@@ -37,11 +37,15 @@ public class GamesController(IMediator mediator) : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
-    /// <summary>Gets all games owned by a user</summary>
-    [HttpGet("library/{userId:guid}")]
+    /// <summary>Gets all games owned by the authenticated user</summary>
+    [HttpGet("library")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLibrary(Guid userId, CancellationToken ct)
+    public async Task<IActionResult> GetLibrary(CancellationToken ct)
     {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
         var result = await mediator.Send(new GetGamesByUserQuery(userId), ct);
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }

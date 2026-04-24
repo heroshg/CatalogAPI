@@ -3,20 +3,16 @@
     "Catalog": "Host=localhost;Port=5432;Database=catalog_db;Username=postgres;Password=CHANGE_ME"
   },
   "Jwt": {
-    "Key": "CHANGE_ME",
+    "Key": "CHANGE_ME_min32chars_use_openssl_rand_base64_32",
     "Issuer": "FiapCloudGames",
     "Audience": "FiapCloudGames"
   },
   "RabbitMQ": {
     "Host": "localhost",
-    "Username": "guest",
+    "Username": "fcg_rmq",
     "Password": "CHANGE_ME"
   },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*"
+  "Redis": {
+    "ConnectionString": "localhost:6379,password=CHANGE_ME"
+  }
 }
