@@ -12,6 +12,7 @@ public class PlaceOrderHandler(
     IGameRepository gameRepository,
     IGameLicenseRepository licenseRepository,
     IOrderRepository orderRepository,
+    IUnitOfWork unitOfWork,
     IPublishEndpoint publishEndpoint,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<PlaceOrderCommand, ResultViewModel<Guid>>
@@ -32,11 +33,15 @@ public class PlaceOrderHandler(
             return ResultViewModel<Guid>.Error("You already own this game.");
 
         var order = Order.Create(userId, game.Id, game.Name, game.Price);
-        await orderRepository.AddAsync(order, CancellationToken.None);
+        await orderRepository.AddAsync(order, ct);
 
         await publishEndpoint.Publish(new OrderPlacedEvent(
             order.Id, userId, userEmail ?? string.Empty,
-            game.Id, game.Name.Value, game.Price.Amount), CancellationToken.None);
+            game.Id, game.Name.Value, game.Price.Amount), ct);
+
+        // Commit atômico: persiste a Order + grava OrderPlacedEvent na OutboxMessage
+        // (MassTransit BusOutbox intercepta o Publish e flusha aqui).
+        await unitOfWork.SaveChangesAsync(ct);
 
         return ResultViewModel<Guid>.Success(order.Id);
     }

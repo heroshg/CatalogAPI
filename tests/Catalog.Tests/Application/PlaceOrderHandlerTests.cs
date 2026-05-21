@@ -45,6 +45,7 @@ public class PlaceOrderHandlerTests
             new Mock<IGameRepository>().Object,
             new Mock<IGameLicenseRepository>().Object,
             new Mock<IOrderRepository>().Object,
+            new Mock<IUnitOfWork>().Object,
             new Mock<IPublishEndpoint>().Object,
             BuildAccessorWithoutClaims());
 
@@ -65,6 +66,7 @@ public class PlaceOrderHandlerTests
             gameRepo.Object,
             new Mock<IGameLicenseRepository>().Object,
             new Mock<IOrderRepository>().Object,
+            new Mock<IUnitOfWork>().Object,
             new Mock<IPublishEndpoint>().Object,
             BuildAccessorWithUser(UserId));
 
@@ -90,6 +92,7 @@ public class PlaceOrderHandlerTests
             gameRepo.Object,
             licenseRepo.Object,
             new Mock<IOrderRepository>().Object,
+            new Mock<IUnitOfWork>().Object,
             new Mock<IPublishEndpoint>().Object,
             BuildAccessorWithUser(UserId));
 
@@ -112,12 +115,14 @@ public class PlaceOrderHandlerTests
             .ReturnsAsync(false);
 
         var orderRepo = new Mock<IOrderRepository>();
+        var uow       = new Mock<IUnitOfWork>();
         var publisher = new Mock<IPublishEndpoint>();
 
         var sut = new PlaceOrderHandler(
             gameRepo.Object,
             licenseRepo.Object,
             orderRepo.Object,
+            uow.Object,
             publisher.Object,
             BuildAccessorWithUser(UserId, "player@example.com"));
 
@@ -139,5 +144,7 @@ public class PlaceOrderHandlerTests
                 e.GameId == game.Id &&
                 e.UserEmail == "player@example.com"),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

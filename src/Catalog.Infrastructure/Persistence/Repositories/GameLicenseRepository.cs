@@ -7,10 +7,7 @@ namespace Catalog.Infrastructure.Persistence.Repositories;
 public class GameLicenseRepository(CatalogDbContext context) : IGameLicenseRepository
 {
     public async Task AddAsync(GameLicense license, CancellationToken ct)
-    {
-        await context.GameLicenses.AddAsync(license, ct);
-        await context.SaveChangesAsync(ct);
-    }
+        => await context.GameLicenses.AddAsync(license, ct);
 
     public async Task<bool> ExistsAsync(Guid gameId, Guid userId, CancellationToken ct) =>
         await context.GameLicenses.AnyAsync(gl => gl.GameId == gameId && gl.UserId == userId, ct);

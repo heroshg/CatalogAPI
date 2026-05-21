@@ -1,3 +1,4 @@
+using Catalog.Application.Consumers;
 using Catalog.Application.Sagas;
 using Catalog.Application.Sagas.Activities;
 using Catalog.Domain.Interfaces;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IGameLicenseRepository, GameLicenseRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Saga activities resolvidas pelo container
         services.AddScoped<ApproveOrderActivity>();
@@ -45,6 +47,14 @@ public static class DependencyInjection
         services.AddMassTransit(x =>
         {
             x.DisableUsageTelemetry();
+
+            x.AddEntityFrameworkOutbox<CatalogDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.UseBusOutbox();
+                o.QueryDelay = TimeSpan.FromSeconds(1);
+            });
+
             x.AddSagaStateMachine<OrderSagaStateMachine, OrderSagaState>()
                 .EntityFrameworkRepository(r =>
                 {
@@ -52,6 +62,8 @@ public static class DependencyInjection
                     r.ExistingDbContext<CatalogDbContext>();
                     r.UsePostgres();
                 });
+
+            x.AddConsumer<OrderCancelledEventConsumer>();
 
             x.UsingRabbitMq((ctx, cfg) =>
             {
