@@ -34,10 +34,11 @@ public class GameRepository(IDynamoDBContext db) : IGameRepository
         var search = db.QueryAsync<GameDocument>("ACTIVE", config);
         var all    = await search.GetRemainingAsync(ct);
 
-        if (!string.IsNullOrWhiteSpace(name))
-            all = all.Where(d => d.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+        IEnumerable<GameDocument> filtered = string.IsNullOrWhiteSpace(name)
+            ? all
+            : all.Where(d => d.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
 
-        return all
+        return filtered
             .Skip(page * pageSize)
             .Take(pageSize)
             .Select(d => d.ToDomain())
