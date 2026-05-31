@@ -1,13 +1,16 @@
+using Catalog.Application.Queries.GetGamesByUser;
 using Catalog.Domain.Entities;
 using Catalog.Domain.Interfaces;
 using FiapCloudGames.Contracts.Events;
 using MassTransit;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Catalog.Application.Sagas.Activities;
 
 public class ApproveOrderActivity(
     IGameLicenseRepository licenseRepository,
-    IOrderRepository orderRepository)
+    IOrderRepository orderRepository,
+    IDistributedCache cache)
     : IStateMachineActivity<OrderSagaState, PaymentProcessedEvent>
 {
     public async Task Execute(
@@ -20,6 +23,9 @@ public class ApproveOrderActivity(
         {
             var license = new GameLicense(saga.GameId, saga.UserId);
             await licenseRepository.AddAsync(license, CancellationToken.None);
+
+            // Invalida biblioteca do usuário para refletir o novo jogo adquirido
+            await cache.RemoveAsync(GetGamesByUserHandler.CacheKeyFor(saga.UserId), CancellationToken.None);
         }
 
         var order = await orderRepository.GetByIdAsync(saga.CorrelationId, CancellationToken.None);

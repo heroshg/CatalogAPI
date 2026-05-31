@@ -16,4 +16,7 @@ public class GameLicense
     public Guid GameId { get; private set; }
     public Guid UserId { get; private set; }
     public DateTime AcquiredAt { get; private set; }
+
+    public static GameLicense Reconstitute(Guid id, Guid gameId, Guid userId, DateTime acquiredAt) =>
+        new() { Id = id, GameId = gameId, UserId = userId, AcquiredAt = acquiredAt };
 }

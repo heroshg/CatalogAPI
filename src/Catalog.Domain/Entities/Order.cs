@@ -46,4 +46,19 @@ public class Order
         Status    = OrderStatus.Failed;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public static Order Reconstitute(
+        Guid id, Guid userId, Guid gameId, GameName gameName, Money price,
+        OrderStatus status, DateTime createdAt, DateTime? updatedAt) =>
+        new()
+        {
+            Id        = id,
+            UserId    = userId,
+            GameId    = gameId,
+            GameName  = gameName,
+            Price     = price,
+            Status    = status,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt,
+        };
 }

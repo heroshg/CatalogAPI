@@ -19,6 +19,6 @@ builder.Services.AddApiServices(builder.Configuration);
 
 var app = builder.Build();
 
-app.ApplyMigrations();
+await app.EnsureDynamoDbTablesAsync();
 app.UseApiPipeline();
 app.Run();

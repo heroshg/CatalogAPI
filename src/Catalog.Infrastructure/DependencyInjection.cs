@@ -1,11 +1,14 @@
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Catalog.Application.Consumers;
 using Catalog.Application.Sagas;
 using Catalog.Application.Sagas.Activities;
 using Catalog.Domain.Interfaces;
 using Catalog.Infrastructure.Persistence;
-using Catalog.Infrastructure.Persistence.Repositories;
+using Catalog.Infrastructure.Persistence.DynamoDB;
+using Catalog.Infrastructure.Persistence.DynamoDB.Repositories;
+using Catalog.Infrastructure.Persistence.DynamoDB.Sagas;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,29 +16,58 @@ namespace Catalog.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        // ── Banco de Dados ────────────────────────────────────────────────────
-        services.AddDbContext<CatalogDbContext>(opts =>
-            opts.UseNpgsql(configuration.GetConnectionString("Catalog")));
+        // ── DynamoDB ─────────────────────────────────────────────────────────
+
+        services.AddDefaultAWSOptions(configuration.GetAWSOptions());
+
+        services.AddAWSService<IAmazonDynamoDB>();
+
+        services.AddScoped<IDynamoDBContext>(sp =>
+            new DynamoDBContext(
+                sp.GetRequiredService<IAmazonDynamoDB>(),
+                new DynamoDBContextConfig
+                {
+                    RetrieveDateTimeInUtc = true,
+                    SkipVersionCheck = true,
+                    ConsistentRead = false
+                }));
 
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IGameLicenseRepository, GameLicenseRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // Saga activities resolvidas pelo container
+        services.AddSingleton<DynamoDbBootstrapper>();
+
+        // ── Activities ──────────────────────────────────────────────────────
+
         services.AddScoped<ApproveOrderActivity>();
         services.AddScoped<CancelOrderActivity>();
 
-        // ── Cache — Redis ─────────────────────────────────────────────────────
+        // ── Saga Repository ─────────────────────────────────────────────────
+
+        services.AddScoped<DynamoDbOrderSagaRepositoryContextFactory>();
+
+        services.AddScoped<DynamoDbOrderSagaRepository>();
+
+        services.AddScoped<ISagaRepository<OrderSagaState>>(sp =>
+            sp.GetRequiredService<DynamoDbOrderSagaRepository>());
+
+        // ── Cache — Redis ───────────────────────────────────────────────────
+
         var redisConnection = configuration["Redis:ConnectionString"];
+
         if (!string.IsNullOrWhiteSpace(redisConnection))
         {
             services.AddStackExchangeRedisCache(opts =>
             {
                 opts.Configuration = redisConnection;
-                opts.InstanceName   = "fcg-catalog:";
+                opts.InstanceName = "fcg-catalog:";
             });
         }
         else
@@ -43,25 +75,13 @@ public static class DependencyInjection
             services.AddDistributedMemoryCache();
         }
 
-        // ── Mensageria — RabbitMQ ─────────────────────────────────────────────
+        // ── Mensageria — RabbitMQ ───────────────────────────────────────────
+
         services.AddMassTransit(x =>
         {
             x.DisableUsageTelemetry();
 
-            x.AddEntityFrameworkOutbox<CatalogDbContext>(o =>
-            {
-                o.UsePostgres();
-                o.UseBusOutbox();
-                o.QueryDelay = TimeSpan.FromSeconds(1);
-            });
-
-            x.AddSagaStateMachine<OrderSagaStateMachine, OrderSagaState>()
-                .EntityFrameworkRepository(r =>
-                {
-                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-                    r.ExistingDbContext<CatalogDbContext>();
-                    r.UsePostgres();
-                });
+            x.AddSagaStateMachine<OrderSagaStateMachine, OrderSagaState>();
 
             x.AddConsumer<OrderCancelledEventConsumer>();
 
@@ -69,9 +89,15 @@ public static class DependencyInjection
             {
                 cfg.Host(configuration["RabbitMQ:Host"], "/", h =>
                 {
-                    h.Username(configuration["RabbitMQ:Username"] ?? throw new InvalidOperationException("RabbitMQ:Username is missing."));
-                    h.Password(configuration["RabbitMQ:Password"] ?? throw new InvalidOperationException("RabbitMQ:Password is missing."));
+                    h.Username(
+                        configuration["RabbitMQ:Username"]
+                        ?? throw new InvalidOperationException("RabbitMQ:Username is missing."));
+
+                    h.Password(
+                        configuration["RabbitMQ:Password"]
+                        ?? throw new InvalidOperationException("RabbitMQ:Password is missing."));
                 });
+
                 cfg.ConfigureEndpoints(ctx);
             });
         });

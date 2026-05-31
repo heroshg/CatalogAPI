@@ -8,4 +8,5 @@ public interface IGameRepository
     Task<Game?> GetByIdAsync(Guid id, CancellationToken ct);
     Task<bool> ExistsByNameAsync(string name, CancellationToken ct);
     Task<List<Game>> GetAllAsync(string name, int page, int pageSize, CancellationToken ct);
+    Task UpdateAsync(Game game, CancellationToken ct);
 }

@@ -1,9 +1,8 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using Catalog.Infrastructure.Persistence;
+using Catalog.Infrastructure.Persistence.DynamoDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -24,14 +23,14 @@ public static class DependencyInjection
             {
                 o.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
+                    ValidateIssuer           = true,
+                    ValidateAudience         = true,
+                    ValidateLifetime         = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
-                    IssuerSigningKey = new RsaSecurityKey(rsa) { KeyId = "fcg-rsa-1" },
-                    ValidAlgorithms = new[] { SecurityAlgorithms.RsaSha256 }
+                    ValidIssuer              = configuration["Jwt:Issuer"],
+                    ValidAudience            = configuration["Jwt:Audience"],
+                    IssuerSigningKey         = new RsaSecurityKey(rsa) { KeyId = "fcg-rsa-1" },
+                    ValidAlgorithms          = new[] { SecurityAlgorithms.RsaSha256 }
                 };
             });
 
@@ -50,9 +49,9 @@ public static class DependencyInjection
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
+                Name        = "Authorization",
+                In          = ParameterLocation.Header,
+                Type        = SecuritySchemeType.ApiKey,
                 BearerFormat = "JWT",
                 Description = "Enter: Bearer {token}"
             });
@@ -85,24 +84,21 @@ public static class DependencyInjection
         return app;
     }
 
-    public static void ApplyMigrations(this WebApplication app)
+    public static async Task EnsureDynamoDbTablesAsync(this WebApplication app)
     {
-        using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<CatalogDbContext>>();
+        using var scope      = app.Services.CreateScope();
+        var bootstrapper     = scope.ServiceProvider.GetRequiredService<DynamoDbBootstrapper>();
+        var logger           = scope.ServiceProvider.GetRequiredService<ILogger<DynamoDbBootstrapper>>();
+        var cts              = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
-        for (var attempt = 1; attempt <= 10; attempt++)
+        try
         {
-            try
-            {
-                db.Database.Migrate();
-                return;
-            }
-            catch (Exception ex) when (attempt < 10)
-            {
-                logger.LogWarning(ex, "Migration attempt {Attempt}/10 failed. Retrying in {Delay}s...", attempt, attempt * 3);
-                Thread.Sleep(TimeSpan.FromSeconds(attempt * 3));
-            }
+            await bootstrapper.EnsureTablesExistAsync(cts.Token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Falha ao garantir tabelas DynamoDB no startup.");
+            throw;
         }
     }
 }
