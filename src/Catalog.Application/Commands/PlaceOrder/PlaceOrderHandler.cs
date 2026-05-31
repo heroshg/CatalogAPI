@@ -31,7 +31,6 @@ public class PlaceOrderHandler(
         if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
             return ResultViewModel<Guid>.Error("Invalid user token.");
 
-        // Tenta servir o jogo do cache antes de ir ao DynamoDB
         var game = await GetGameCachedAsync(request.GameId, ct);
         if (game is null)
             return ResultViewModel<Guid>.Error("Game not found.");
@@ -61,7 +60,6 @@ public class PlaceOrderHandler(
 
         if (cached is not null)
         {
-            // Cache hit: reconstrói a entidade a partir do ViewModel cached
             var vm = JsonSerializer.Deserialize<GameViewModel>(cached)!;
             return Game.Reconstitute(vm.Id, vm.Name, vm.Description, vm.Price, vm.IsActive, vm.CreatedAt, vm.CreatedAt);
         }
@@ -69,7 +67,6 @@ public class PlaceOrderHandler(
         var game = await gameRepository.GetByIdAsync(gameId, ct);
         if (game is null) return null;
 
-        // Popula cache para requests futuros
         var gameVm = new GameViewModel(game.Id, game.Name.Value, game.Description.Value, game.Price.Amount, game.IsActive, game.CreatedAt);
         await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(gameVm),
             new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = GameCacheTtl }, ct);

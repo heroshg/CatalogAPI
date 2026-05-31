@@ -7,20 +7,15 @@ namespace Catalog.Infrastructure.Persistence.DynamoDB.Documents;
 [DynamoDBTable("catalog-games")]
 public class GameDocument
 {
-    // Chave primária da tabela
     [DynamoDBHashKey("Id")]
     public string Id { get; set; } = null!;
 
-    // GSI1: Name-Index — hash key para ExistsByNameAsync
     [DynamoDBGlobalSecondaryIndexHashKey("Name-Index", AttributeName = "Name")]
     public string Name { get; set; } = null!;
 
-    // GSI2: ActiveGames-Index (sparse) — presente só em jogos ativos
-    // Quando IsActive=false, ActivePartition é nulo e o item sai do índice
     [DynamoDBGlobalSecondaryIndexHashKey("ActiveGames-Index", AttributeName = "ActivePartition")]
     public string? ActivePartition { get; set; }
 
-    // Range key do GSI2 para ordenação por data de criação
     [DynamoDBGlobalSecondaryIndexRangeKey("ActiveGames-Index", AttributeName = "CreatedAt")]
     public string CreatedAt { get; set; } = null!;
 

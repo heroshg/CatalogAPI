@@ -12,21 +12,18 @@ public class GameLicenseRepository(IDynamoDBContext db) : IGameLicenseRepository
 
     public async Task<bool> ExistsAsync(Guid gameId, Guid userId, CancellationToken ct)
     {
-        // GetItem por PK (UserId) + SK (GameId) — O(1)
         var doc = await db.LoadAsync<GameLicenseDocument>(userId.ToString(), gameId.ToString(), ct);
         return doc is not null;
     }
 
     public async Task<List<Game>> GetGamesByUserIdAsync(Guid userId, CancellationToken ct)
     {
-        // 1. Busca todas as licenças do usuário via Query no PK
         var search   = db.QueryAsync<GameLicenseDocument>(userId.ToString());
         var licenses = await search.GetRemainingAsync(ct);
 
         if (licenses.Count == 0)
             return [];
 
-        // 2. BatchGet nos jogos referenciados pelas licenças
         var batch = db.CreateBatchGet<GameDocument>();
         foreach (var lic in licenses)
             batch.AddKey(lic.GameId);

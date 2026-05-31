@@ -13,7 +13,6 @@ namespace Catalog.API.Controllers;
 [Authorize]
 public class GamesController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Registers a new game (Admin only)</summary>
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -24,7 +23,6 @@ public class GamesController(IMediator mediator) : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
-    /// <summary>Gets paginated list of games</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
@@ -37,7 +35,6 @@ public class GamesController(IMediator mediator) : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
-    /// <summary>Gets all games owned by the authenticated user</summary>
     [HttpGet("library")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLibrary(CancellationToken ct)
@@ -50,7 +47,6 @@ public class GamesController(IMediator mediator) : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
-    /// <summary>Initiates a game purchase (publishes OrderPlacedEvent)</summary>
     [HttpPost("purchase")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

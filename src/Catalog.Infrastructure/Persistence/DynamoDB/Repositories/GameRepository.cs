@@ -22,7 +22,6 @@ public class GameRepository(IDynamoDBContext db) : IGameRepository
 
     public async Task<bool> ExistsByNameAsync(string name, CancellationToken ct)
     {
-        // Consulta o GSI Name-Index com o valor do hash key
         var config = new DynamoDBOperationConfig { IndexName = "Name-Index" };
         var search = db.QueryAsync<GameDocument>(name.Trim(), config);
         var page   = await search.GetNextSetAsync(ct);
@@ -31,7 +30,6 @@ public class GameRepository(IDynamoDBContext db) : IGameRepository
 
     public async Task<List<Game>> GetAllAsync(string name, int page, int pageSize, CancellationToken ct)
     {
-        // Consulta o GSI ActiveGames-Index (sparse) — retorna apenas jogos ativos
         var config = new DynamoDBOperationConfig { IndexName = "ActiveGames-Index" };
         var search = db.QueryAsync<GameDocument>("ACTIVE", config);
         var all    = await search.GetRemainingAsync(ct);

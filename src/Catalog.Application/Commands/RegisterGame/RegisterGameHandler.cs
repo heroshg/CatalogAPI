@@ -21,15 +21,12 @@ public class RegisterGameHandler(IGameRepository repository, IDistributedCache c
         var game = new Game(request.Name, request.Description, request.Price);
         var id   = await repository.AddAsync(game, ct);
 
-        // Popula cache do jogo individualmente para aquecer GetById
         var vm = new GameViewModel(game.Id, game.Name.Value, game.Description.Value, game.Price.Amount, game.IsActive, game.CreatedAt);
         await cache.SetStringAsync(
             GameCacheKey(id),
             JsonSerializer.Serialize(vm),
             new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = GameCacheTtl }, ct);
 
-        // Invalida cache de lista: remove a revisão para que GetAllGames
-        // busque dados frescos na próxima chamada
         await cache.RemoveAsync(GetAllGamesHandler.RevisionKey, ct);
 
         return ResultViewModel<Guid>.Success(id);

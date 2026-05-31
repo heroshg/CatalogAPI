@@ -7,7 +7,6 @@ namespace Catalog.Infrastructure.Persistence.DynamoDB;
 public sealed class DynamoDbBootstrapper(IAmazonDynamoDB client, ILogger<DynamoDbBootstrapper> logger)
 {
     public Task EnsureTablesExistAsync(CancellationToken ct = default) =>
-        // Todas as 4 tabelas são criadas em paralelo — startup ~4x mais rápido
         Task.WhenAll(
             EnsureGamesTableAsync(ct),
             EnsureLicensesTableAsync(ct),
@@ -97,8 +96,6 @@ public sealed class DynamoDbBootstrapper(IAmazonDynamoDB client, ILogger<DynamoD
 
     private async Task WaitUntilActiveAsync(string tableName, CancellationToken ct)
     {
-        // Checa imediatamente primeiro (LocalStack ativa tabelas em <100ms),
-        // depois aguarda com backoff até 30s
         for (var i = 0; i < 30; i++)
         {
             var desc = await client.DescribeTableAsync(tableName, ct);

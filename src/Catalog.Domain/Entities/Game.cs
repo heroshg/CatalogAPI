@@ -50,7 +50,6 @@ public class Game
         UpdatedAt = DateTime.UtcNow;
     }
 
-    // Reconstrói a entidade a partir de dados brutos de persistência (sem validação de negócio).
     public static Game Reconstitute(
         Guid id, string name, string description, decimal price,
         bool isActive, DateTime createdAt, DateTime updatedAt) =>

@@ -9,8 +9,6 @@ namespace Catalog.Application.Queries.GetAllGames;
 public class GetAllGamesHandler(IGameRepository repository, IDistributedCache cache)
     : IRequestHandler<GetAllGamesQuery, ResultViewModel<PageResultViewModel<GameViewModel>>>
 {
-    // Chave de revisão: removida quando jogos são adicionados/alterados,
-    // forçando invalidação de todas as páginas cacheadas sem precisar enumerá-las.
     public const string RevisionKey = "games:rev";
     private static readonly TimeSpan ListCacheTtl     = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan RevisionCacheTtl = TimeSpan.FromHours(1);

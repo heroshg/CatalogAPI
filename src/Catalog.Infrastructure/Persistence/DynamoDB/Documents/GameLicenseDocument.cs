@@ -6,11 +6,9 @@ namespace Catalog.Infrastructure.Persistence.DynamoDB.Documents;
 [DynamoDBTable("catalog-licenses")]
 public class GameLicenseDocument
 {
-    // PK: UserId — permite QueryAsync(userId) para buscar licenças do usuário
     [DynamoDBHashKey("UserId")]
     public string UserId { get; set; } = null!;
 
-    // SK: GameId — junto com UserId forma a chave composta (evita duplicatas via GetItem)
     [DynamoDBRangeKey("GameId")]
     public string GameId { get; set; } = null!;
 

@@ -20,8 +20,6 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // ── DynamoDB ─────────────────────────────────────────────────────────
-
         services.AddDefaultAWSOptions(configuration.GetAWSOptions());
 
         services.AddAWSService<IAmazonDynamoDB>();
@@ -44,12 +42,8 @@ public static class DependencyInjection
 
         services.AddSingleton<DynamoDbBootstrapper>();
 
-        // ── Activities ──────────────────────────────────────────────────────
-
         services.AddScoped<ApproveOrderActivity>();
         services.AddScoped<CancelOrderActivity>();
-
-        // ── Saga Repository ─────────────────────────────────────────────────
 
         services.AddScoped<DynamoDbOrderSagaRepositoryContextFactory>();
 
@@ -57,8 +51,6 @@ public static class DependencyInjection
 
         services.AddScoped<ISagaRepository<OrderSagaState>>(sp =>
             sp.GetRequiredService<DynamoDbOrderSagaRepository>());
-
-        // ── Cache — Redis ───────────────────────────────────────────────────
 
         var redisConnection = configuration["Redis:ConnectionString"];
 
@@ -74,8 +66,6 @@ public static class DependencyInjection
         {
             services.AddDistributedMemoryCache();
         }
-
-        // ── Mensageria — RabbitMQ ───────────────────────────────────────────
 
         services.AddMassTransit(x =>
         {

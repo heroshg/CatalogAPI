@@ -3,11 +3,6 @@ using MassTransit;
 
 namespace Catalog.Infrastructure.Persistence.DynamoDB.Sagas;
 
-/// <summary>
-/// Implementação de <see cref="SagaConsumeContext{TSaga,TMessage}"/> que delega todos os membros
-/// de <see cref="ConsumeContext{TMessage}"/> para o contexto de mensagem original.
-/// Usada como retorno dos métodos Load/Add/Insert do repositório DynamoDB.
-/// </summary>
 internal sealed class OrderSagaConsumeContext<TMessage>
     : SagaConsumeContext<OrderSagaState, TMessage>
     where TMessage : class
@@ -24,8 +19,6 @@ internal sealed class OrderSagaConsumeContext<TMessage>
     public bool IsCompleted { get; private set; }
     public Task SetCompleted() { IsCompleted = true; return Task.CompletedTask; }
 
-    // ── Delegação de ConsumeContext<TMessage> ────────────────────────────────
-    // PipeContext
     CancellationToken PipeContext.CancellationToken                                        => _inner.CancellationToken;
     bool PipeContext.HasPayloadType(Type payloadType)                                      => _inner.HasPayloadType(payloadType);
     bool PipeContext.TryGetPayload<T>(out T payload)                                       => _inner.TryGetPayload(out payload!);
@@ -33,7 +26,6 @@ internal sealed class OrderSagaConsumeContext<TMessage>
     T PipeContext.AddOrUpdatePayload<T>(PayloadFactory<T> addFactory, UpdatePayloadFactory<T> updateFactory)
         => _inner.AddOrUpdatePayload(addFactory, updateFactory);
 
-    // MessageContext
     Guid? MessageContext.MessageId         => _inner.MessageId;
     Guid? MessageContext.RequestId         => _inner.RequestId;
     Guid? MessageContext.CorrelationId     => _inner.CorrelationId;
@@ -48,7 +40,6 @@ internal sealed class OrderSagaConsumeContext<TMessage>
     Headers MessageContext.Headers         => _inner.Headers;
     HostInfo MessageContext.Host           => _inner.Host;
 
-    // ConsumeContext (não-genérica)
     ReceiveContext ConsumeContext.ReceiveContext                                    => _inner.ReceiveContext;
     MassTransit.SerializerContext ConsumeContext.SerializerContext                  => _inner.SerializerContext;
     IEnumerable<string> ConsumeContext.SupportedMessageTypes                       => _inner.SupportedMessageTypes;
@@ -77,12 +68,10 @@ internal sealed class OrderSagaConsumeContext<TMessage>
     Task ConsumeContext.RespondAsync<T>(object values, IPipe<SendContext> pipe)     => _inner.RespondAsync<T>(values, pipe);
     void ConsumeContext.Respond<T>(T message)                                      => _inner.Respond(message);
 
-    // ConsumeContext<TMessage>
     TMessage ConsumeContext<TMessage>.Message                                      => _inner.Message;
     Task ConsumeContext<TMessage>.NotifyConsumed(TimeSpan duration, string consumerType)  => _inner.NotifyConsumed(duration, consumerType);
     Task ConsumeContext<TMessage>.NotifyFaulted(TimeSpan elapsed, string consumer, Exception ex) => _inner.NotifyFaulted(elapsed, consumer, ex);
 
-    // IPublishEndpoint
     Task IPublishEndpoint.Publish<T>(T msg, CancellationToken ct)                  => _inner.Publish(msg, ct);
     Task IPublishEndpoint.Publish<T>(T msg, IPipe<PublishContext<T>> pipe, CancellationToken ct)  => _inner.Publish(msg, pipe, ct);
     Task IPublishEndpoint.Publish<T>(T msg, IPipe<PublishContext> pipe, CancellationToken ct)     => _inner.Publish(msg, pipe, ct);
@@ -94,12 +83,9 @@ internal sealed class OrderSagaConsumeContext<TMessage>
     Task IPublishEndpoint.Publish<T>(object values, IPipe<PublishContext<T>> pipe, CancellationToken ct) => _inner.Publish<T>(values, pipe, ct);
     Task IPublishEndpoint.Publish<T>(object values, IPipe<PublishContext> pipe, CancellationToken ct) => _inner.Publish<T>(values, pipe, ct);
 
-    // ISendEndpointProvider
     Task<ISendEndpoint> ISendEndpointProvider.GetSendEndpoint(Uri address) => _inner.GetSendEndpoint(address);
 
-    // IPublishObserverConnector
     ConnectHandle IPublishObserverConnector.ConnectPublishObserver(IPublishObserver observer) => _inner.ConnectPublishObserver(observer);
 
-    // ISendObserverConnector
     ConnectHandle ISendObserverConnector.ConnectSendObserver(ISendObserver observer) => _inner.ConnectSendObserver(observer);
 }

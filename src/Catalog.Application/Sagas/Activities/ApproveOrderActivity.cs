@@ -24,7 +24,6 @@ public class ApproveOrderActivity(
             var license = new GameLicense(saga.GameId, saga.UserId);
             await licenseRepository.AddAsync(license, CancellationToken.None);
 
-            // Invalida biblioteca do usuário para refletir o novo jogo adquirido
             await cache.RemoveAsync(GetGamesByUserHandler.CacheKeyFor(saga.UserId), CancellationToken.None);
         }
 

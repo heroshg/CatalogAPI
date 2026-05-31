@@ -6,11 +6,6 @@ using MassTransit.Saga;
 
 namespace Catalog.Infrastructure.Persistence.DynamoDB.Sagas;
 
-/// <summary>
-/// Implementação de <see cref="SagaRepositoryContext{TSaga,TMessage}"/> que usa DynamoDB
-/// como backend de persistência para <see cref="OrderSagaState"/>.
-/// Todos os membros de <see cref="ConsumeContext{TMessage}"/> delegam para o contexto interno.
-/// </summary>
 public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     : SagaRepositoryContext<OrderSagaState, TMessage>
     where TMessage : class
@@ -24,14 +19,11 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
         _db    = db;
     }
 
-    // ── ISagaConsumeContextFactory<OrderSagaState> ───────────────────────────
     Task<SagaConsumeContext<OrderSagaState, T>> ISagaConsumeContextFactory<OrderSagaState>.CreateSagaConsumeContext<T>(
         ConsumeContext<T> context, OrderSagaState instance, SagaConsumeContextMode mode)
         where T : class =>
         Task.FromResult<SagaConsumeContext<OrderSagaState, T>>(
             new OrderSagaConsumeContext<T>(context, instance));
-
-    // ── SagaRepositoryContext<OrderSagaState, TMessage> ──────────────────────
 
     async Task<SagaConsumeContext<OrderSagaState, TMessage>?> SagaRepositoryContext<OrderSagaState, TMessage>.Load(Guid correlationId)
     {
@@ -60,8 +52,6 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     async Task SagaRepositoryContext<OrderSagaState, TMessage>.Delete(SagaConsumeContext<OrderSagaState> context) =>
         await _db.DeleteAsync(OrderSagaStateDocument.FromState(context.Saga), _inner.CancellationToken);
 
-    // ── Delegação de ConsumeContext<TMessage> para _inner ────────────────────
-    // PipeContext
     CancellationToken PipeContext.CancellationToken                                        => _inner.CancellationToken;
     bool PipeContext.HasPayloadType(Type payloadType)                                      => _inner.HasPayloadType(payloadType);
     bool PipeContext.TryGetPayload<T>(out T payload)                                       => _inner.TryGetPayload(out payload!);
@@ -69,7 +59,6 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     T PipeContext.AddOrUpdatePayload<T>(PayloadFactory<T> addFactory, UpdatePayloadFactory<T> updateFactory)
         => _inner.AddOrUpdatePayload(addFactory, updateFactory);
 
-    // MessageContext
     Guid? MessageContext.MessageId         => _inner.MessageId;
     Guid? MessageContext.RequestId         => _inner.RequestId;
     Guid? MessageContext.CorrelationId     => _inner.CorrelationId;
@@ -84,7 +73,6 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     Headers MessageContext.Headers         => _inner.Headers;
     HostInfo MessageContext.Host           => _inner.Host;
 
-    // ConsumeContext (não-genérica)
     ReceiveContext ConsumeContext.ReceiveContext                                    => _inner.ReceiveContext;
     MassTransit.SerializerContext ConsumeContext.SerializerContext                  => _inner.SerializerContext;
     IEnumerable<string> ConsumeContext.SupportedMessageTypes                       => _inner.SupportedMessageTypes;
@@ -113,12 +101,10 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     Task ConsumeContext.RespondAsync<T>(object values, IPipe<SendContext> pipe)     => _inner.RespondAsync<T>(values, pipe);
     void ConsumeContext.Respond<T>(T message)                                      => _inner.Respond(message);
 
-    // ConsumeContext<TMessage>
     TMessage ConsumeContext<TMessage>.Message                                      => _inner.Message;
     Task ConsumeContext<TMessage>.NotifyConsumed(TimeSpan duration, string consumerType)  => _inner.NotifyConsumed(duration, consumerType);
     Task ConsumeContext<TMessage>.NotifyFaulted(TimeSpan elapsed, string consumer, Exception ex) => _inner.NotifyFaulted(elapsed, consumer, ex);
 
-    // IPublishEndpoint
     Task IPublishEndpoint.Publish<T>(T msg, CancellationToken ct)                  => _inner.Publish(msg, ct);
     Task IPublishEndpoint.Publish<T>(T msg, IPipe<PublishContext<T>> pipe, CancellationToken ct)  => _inner.Publish(msg, pipe, ct);
     Task IPublishEndpoint.Publish<T>(T msg, IPipe<PublishContext> pipe, CancellationToken ct)     => _inner.Publish(msg, pipe, ct);
@@ -130,16 +116,12 @@ public sealed class DynamoDbOrderSagaRepositoryContext<TMessage>
     Task IPublishEndpoint.Publish<T>(object values, IPipe<PublishContext<T>> pipe, CancellationToken ct) => _inner.Publish<T>(values, pipe, ct);
     Task IPublishEndpoint.Publish<T>(object values, IPipe<PublishContext> pipe, CancellationToken ct) => _inner.Publish<T>(values, pipe, ct);
 
-    // ISendEndpointProvider
     Task<ISendEndpoint> ISendEndpointProvider.GetSendEndpoint(Uri address) => _inner.GetSendEndpoint(address);
 
-    // IPublishObserverConnector
     ConnectHandle IPublishObserverConnector.ConnectPublishObserver(IPublishObserver observer) => _inner.ConnectPublishObserver(observer);
 
-    // ISendObserverConnector
     ConnectHandle ISendObserverConnector.ConnectSendObserver(ISendObserver observer) => _inner.ConnectSendObserver(observer);
 
-    // ─────────────────────────────────────────────────────────────────────────
     private Task PersistAsync(OrderSagaState state) =>
         _db.SaveAsync(OrderSagaStateDocument.FromState(state), _inner.CancellationToken);
 }

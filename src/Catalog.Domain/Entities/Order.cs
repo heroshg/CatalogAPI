@@ -16,7 +16,6 @@ public class Order
     public DateTime    CreatedAt { get; private set; }
     public DateTime?   UpdatedAt { get; private set; }
 
-    /// <summary>O agregado gera sua própria identidade.</summary>
     public static Order Create(Guid userId, Guid gameId, GameName gameName, Money price)
     {
         return new Order
